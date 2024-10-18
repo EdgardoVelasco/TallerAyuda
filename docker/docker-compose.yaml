@@ -1,0 +1,69 @@
+version: '3.8'
+services:
+  eurekaserver:
+    container_name: eurekaserver
+    build: ./eureka
+    ports:
+      - "9999:9999"
+    healthcheck:
+      test: curl -f http://localhost:9999
+      interval: 5s
+      retries: 3
+    
+  mysqlserver:
+    container_name: mysqlserver
+    image: "mysql:8.0"
+    environment:
+      - MYSQL_DATABASE=micro1
+      - MYSQL_ROOT_PASSWORD=1234
+    healthcheck:
+      test: ["CMD", "mysqladmin","-uroot", "-p${MYSQL_ROOT_PASSWORD}","ping","-h","localhost"]
+      interval: 5s
+      retries: 5
+  
+  microarticulo:
+    container_name: microarticulo
+    build: ./articulo
+    depends_on:
+      mysqlserver:
+        condition: service_healthy
+    environment:
+      - IPDB=mysqlserver
+      - DBUSER=root
+      - DBPASS=1234
+      - IPEUREKA=eurekaserver
+    healthcheck:
+      test: curl -f http://localhost:8081/product
+      interval: 5s
+      retries: 3 
+  
+  microcarrito:
+    container_name: microcarrito
+    build: ./carrito
+    depends_on:
+      microarticulo:
+        condition: 
+          service_healthy
+    environment:
+      - IPEUREKA=eurekaserver
+    healthcheck:
+      test: curl -f http://localhost:8082/cart
+      interval: 5s
+      retries: 3
+  
+  microgateway:
+    container_name: microgateway
+    build: ./gateway
+    depends_on:
+      microcarrito:
+        condition: 
+          service_healthy
+    ports:
+      - "84:8084"
+    environment:
+      - IPEUREKA=eurekaserver
+    healthcheck:
+      test: curl -f http://localhost:8084/micro-carrito/cart
+      interval: 6s
+      retries: 3
+    

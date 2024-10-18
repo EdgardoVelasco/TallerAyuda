@@ -6,10 +6,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import com.bancolombia.app.entities.Product;
 
-@FeignClient(name="micro-articulo", url = "http://localhost:8081/product")
+@FeignClient(name="micro-articulo")
 public interface IProductFeign {
 	 
-	@GetMapping("/{id}")
+	@GetMapping("/product/{id}")
 	Product findById(@PathVariable("id") int id);
 
 }
